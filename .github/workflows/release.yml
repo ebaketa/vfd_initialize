@@ -3,9 +3,18 @@
 
 name: Release
 
+# Two ways to release version X.Y.Z (after updating the sketch and CHANGELOG.md):
+#   - push a tag vX.Y.Z from a terminal, or
+#   - on GitHub: Actions -> Release -> Run workflow, enter X.Y.Z.
+#     The workflow then creates the tag on the current master commit.
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the v (e.g. 1.0.1)"
+        required: true
 
 permissions:
   contents: write
@@ -16,31 +25,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check that the tag matches the sketch version
+      - name: Determine the tag
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          version="$(sed -n 's/^#define VFD_INITIALIZE_VERSION "\(.*\)"/\1/p' vfd_initialize/vfd_initialize.ino)"
-          echo "Tag: $tag, sketch: $version"
-          if [ "$tag" != "$version" ]; then
-            echo "::error::Tag v$tag does not match VFD_INITIALIZE_VERSION \"$version\""
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${INPUT_VERSION#v}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::\"$version\" is not a MAJOR.MINOR.PATCH version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "TAG=v$version" >> "$GITHUB_ENV"
+
+      - name: Check that the version matches the sketch
+        run: |
+          sketch="$(sed -n 's/^#define VFD_INITIALIZE_VERSION "\(.*\)"/\1/p' vfd_initialize/vfd_initialize.ino)"
+          echo "Release: $VERSION, sketch: $sketch"
+          if [ "$VERSION" != "$sketch" ]; then
+            echo "::error::$TAG does not match VFD_INITIALIZE_VERSION \"$sketch\""
             exit 1
           fi
 
       - name: Extract release notes from CHANGELOG.md
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          awk -v v="$tag" '
-            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
             found && /^## \[/ { exit }
             found && /^\[[^]]+\]: / { exit }
             found { print }
           ' CHANGELOG.md > notes.md
           if [ ! -s notes.md ]; then
-            echo "::error::CHANGELOG.md has no section for $tag"
+            echo "::error::CHANGELOG.md has no section for $VERSION"
             exit 1
           fi
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists, nothing to do."
+            exit 0
+          fi
+          # Creates the tag on this commit if it does not exist yet.
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md

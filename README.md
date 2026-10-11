@@ -53,6 +53,11 @@ All changes are listed in [CHANGELOG.md](CHANGELOG.md).
 The **Release** workflow then checks that the tag matches the version in the
 sketch and publishes a GitHub Release with that version's changelog section.
 
+Without a terminal, replace step 3 with: commit the changes to `master`, then on
+GitHub open **Actions → Release → Run workflow**, enter `X.Y.Z` and click
+**Run workflow**. The workflow creates the `vX.Y.Z` tag on the latest `master`
+commit and publishes the release.
+
 ## License
 
 Copyright (C) 2014-2026 Elvis Baketa

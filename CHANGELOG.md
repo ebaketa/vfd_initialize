@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version number.
 - README with wiring, build and release instructions.
 - GitHub Actions workflow that compiles the sketch for Arduino Uno and Nano.
-- GitHub Actions workflow that publishes a GitHub Release for every `vX.Y.Z`
-  tag after checking that the tag matches the version in the sketch.
+- GitHub Actions workflow that publishes a GitHub Release for a `vX.Y.Z` tag,
+  or creates the tag and release when started manually from the Actions tab,
+  after checking that the version matches the sketch.
 
 ### Fixed
 
