@@ -1,9 +1,18 @@
+// SPDX-FileCopyrightText: 2014-2026 Elvis Baketa
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
 // *********************************************************
 // Program: 	VFD Initialize (PT6312)
-// Version: 	1.0
+// Version: 	see VFD_INITIALIZE_VERSION below and CHANGELOG.md
 // Author: 	Elvis Baketa
-// Description: 
+// Description: Initializes a PT6312 VFD driver and writes
+//              a test pattern to the first digit.
 // *********************************************************
+
+// Semantic version (MAJOR.MINOR.PATCH). Keep in sync with
+// CHANGELOG.md; the release workflow checks that the Git tag
+// vMAJOR.MINOR.PATCH matches this value.
+#define VFD_INITIALIZE_VERSION "1.0.1"
 
 #define DAT 2
 #define CLK 3
@@ -24,7 +33,7 @@ void setup()
   // initialize vfd display
   initDisplay();
   // send some data to display
-  updateFixedAddres(startAddres, 0b01110111)
+  updateFixedAddres(startAddress, 0b01110111);
 }
 
 // standard Arduino loop routine
